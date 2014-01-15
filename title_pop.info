@@ -1,0 +1,7 @@
+; $Id$
+name = Title Pop
+description = Webform field auto-population
+package = StraightNorth Custom
+core = 7.x
+dependencies[] = webform
+dependencies[] = link

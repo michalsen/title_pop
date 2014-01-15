@@ -1,0 +1,30 @@
+<?php
+
+/**
+ * @file
+ * Title Pop install file.
+ */
+
+function title_pop_schema() {
+$schema['title_pop'] = array(
+        'description' => 'Control for Title Pop.',
+          'fields' => array(
+            'title_pop' => array(
+              'type' => 'serial'),
+            'content_type' => array(
+              'type' => 'varchar',
+              'length' => 255,),
+            'content_element' => array(
+              'type' => 'varchar',
+              'length' => 255),
+            'webform' => array(
+              'type' => 'varchar',
+              'length' => 255),
+            'webform_component' => array(
+              'type' => 'varchar',
+              'length' => 255),
+         ),
+        'primary key' => array('title_pop'),
+     );
+   return $schema;
+}

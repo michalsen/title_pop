@@ -1,0 +1,266 @@
+<?php
+/** 
+ *  Title Pop
+ *  Carry the node title via a CTA to a webform autocompletion.
+ *
+ */
+
+function title_pop_init () {
+  // Move this to form submit/validation
+  if ( arg(2) == 'delete' ) {
+    db_delete('title_pop')
+          ->condition('title_pop', arg(3) )
+          ->execute();
+      }
+   }
+
+
+function title_pop_menu() {
+  $items = array();
+  $items['admin/title_pop'] = array(
+              'title' => 'Title POP',
+              'page callback' => 'title_pop_page',
+              'access arguments' => array('accesstitle_pop content'),
+              'description' => 'Title POP Control Page',
+              'access callback' => TRUE,
+              'type' => MENU_LOCAL_TASK,
+          );
+   return $items;
+}
+
+function title_pop_page() {
+  // Are you an admin? Hope so.
+  // Obviously this should be based on permissions, not hard-coded role.
+    global $user;
+  if ($user->uid == 1) {
+    return drupal_get_form('title_pop_form');
+  }
+   else {
+  // ...or else returnes a blank page
+    return drupal_get_form();
+  }
+}
+
+function title_pop_form($form, &$form_state) {
+
+ $tp_results = db_query('SELECT * FROM {title_pop}');
+
+ $markup  = '<table>';
+ $markup .= '<tr>';
+ $markup .= '<th>Delete</th>';
+ $markup .= '<th>Content Type [machine name]</th>';
+ $markup .= '<th>Content Element [field id]</th>';
+ $markup .= '<th>Webform [nid]</th>';
+ $markup .= '<th>Webform Component [cid]</th>';
+ $markup .= '</tr>';
+
+  foreach ( $tp_results as $row ) {
+
+    $ct_result = db_query('SELECT name FROM {node_type} WHERE type = :type', array(':type' => $row->content_type))->fetchObject();
+    $ce_result = db_query('SELECT field_name FROM {field_config_instance} WHERE bundle = :bundle AND field_id = :id', array(':bundle' => $row->content_type, ':id' => $row->content_element))->fetchObject();
+    $wf_result = db_query('SELECT title FROM {node} WHERE nid = :nid', array(':nid' => $row->webform))->fetchObject();
+    $wc_result = db_query('SELECT name FROM {webform_component} WHERE cid = :cid', array(':cid' => $row->webform_component))->fetchObject();
+
+      $markup .= '<tr><td>';
+      $markup .= '<a href="/admin/title_pop/delete/' . $row->title_pop . '">X</a>';
+      $markup .= '</td><td>';
+      $markup .= $ct_result->name . ' [' . $row->content_type . ']';
+      $markup .= '</td><td>';
+      $markup .= $ce_result->field_name . ' [' . $row->content_element . ']';
+      $markup .= '</td><td>';
+      $markup .= $wf_result->title . ' [' . $row->webform . ']';
+      $markup .= '</td><td>';
+      $markup .= $wc_result->name . ' [' . $row->webform_component . ']';
+      $markup .= '</td></tr>';
+
+  }
+
+ $markup .= '<table>';
+
+ $ct_results = db_query('SELECT type, name FROM {node_type}');
+ $wf_results = db_query('SELECT nid, title FROM {node} WHERE type = :type', array(':type' => 'webform'));
+
+  $options_first = title_pop_first_dropdown_options();
+  $options_second = title_pop_second_dropdown_options();
+
+   $ct_options[] = '-- Content Types --';
+     foreach ( $ct_results as $row ) {
+        $ct_options[$row->type] = $row->name;
+       }
+
+   $wf_options[] = '-- Webforms --';
+     foreach ( $wf_results as $row ) {
+        $wf_options[$row->nid] = $row->title;
+      }
+
+    $value_dropdown_first         = isset($form_state['values']['content_type']) ? $form_state['values']['content_type'] : key($options_first);
+    $value_dropdown_first_element = isset($form_state['values']['webforms']) ? $form_state['values']['webforms'] : key($options_first_element);
+    $value_content_element        = $form_state['values']['dropdown_second'];
+
+  $form['markup'] = array(
+    '#markup' => $markup,
+    '#title' => t(''),
+    );
+
+/** 
+ *   CONTENT TYPE
+ */
+   $form['content_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Content Type'),
+    '#options' => $ct_options,
+    '#default_value' => $value_dropdown_first,
+    '#ajax' => array(
+       'event' => 'change',
+       'callback' => 'title_pop_ajax_callback',
+       'wrapper' => 'dropdown_first_replace',
+      ),
+    );
+
+   $form['dropdown_second'] = array(
+        '#type' => 'select',
+        '#title' => 'Content Elements',
+        '#prefix' => '<div id="dropdown_first_replace">',
+        '#suffix' => '</div>',
+        '#options' => title_pop_second_dropdown_options_components($value_dropdown_first),
+        '#default_value' => $value_content_element,
+        '#ajax' => array(
+            'event' => 'change',
+            'callback' => 'title_pop_ajax_callback',
+            'wrapper' => 'dropdown_first_replace',
+        ),
+    );
+
+
+/**
+ *   WEBFORM
+ */
+   $form['webforms'] = array(
+    '#type' => 'select',
+    '#title' => t('Webforms'),
+    '#options' => $wf_options,
+    '#default_value' => $value_dropdown_first_element,
+    '#ajax' => array(
+       'event' => 'change',
+       'callback' => 'title_pop_ajax_callback_element',
+       'wrapper' => 'dropdown_second_replace',
+      ),
+    );
+
+    $form['dropdown_second_element'] = array(
+        '#type' => 'select',
+        '#title' => 'Webform Components',
+        '#prefix' => '<div id="dropdown_second_replace">',
+        '#suffix' => '</div>',
+        '#options' => title_pop_second_dropdown_options_element($value_dropdown_first_element),
+        //'#default_value' => isset($form_state['values']['webforms']) ? $form_state['values']['webforms'] : '',
+    );
+
+
+/**
+ *   SUBMIT
+ */
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Submit',
+  );
+
+ $form['#submit'][] = 'title_pop_form_submit';
+
+  return $form;
+
+}
+
+function title_pop_ajax_callback($form, $form_state) {
+    return $form['dropdown_second'];
+}
+
+function title_pop_ajax_callback_element($form, $form_state) {
+    return $form['dropdown_second_element'];
+}
+
+function title_pop_first_dropdown_options() {
+      return $ct_results;
+}
+
+function title_pop_second_dropdown_options() {
+      return $wf_results;
+}
+
+
+function title_pop_second_dropdown_options_components($value_dropdown_first) {
+$bundle = strtolower(preg_replace('/ /', '_', $value_dropdown_first));
+ $ce_results = db_query('SELECT field_id, field_name FROM field_config_instance WHERE bundle = :bundle', array(':bundle' => $bundle));
+  
+   $options['choose'] = '-- Choose Element --';
+   $options['Title'] = 'Title';
+     foreach ( $ce_results as $row ) {
+        $options[$row->field_id] = $row->field_name;
+       }
+        return $options;
+}
+
+function title_pop_second_dropdown_options_element($value_dropdown_first_element) {
+
+ //$webform_nid = db_query('SELECT nid FROM {node} WHERE title = :title', array(':title' => $value_dropdown_first_element))->fetchObject();
+ $component_results = db_query('SELECT cid, name FROM {webform_component} WHERE nid = :nid', array(':nid' => $value_dropdown_first_element));
+
+   $options['choose'] = '-- Choose Component --';
+     foreach ( $component_results as $row ) {
+        $options[$row->cid] = $row->name;
+       }
+     
+    return $options;
+
+}
+
+function title_pop_form_submit($form, $form_state){
+
+   db_insert('title_pop')
+         ->fields(array('content_type','content_element','webform','webform_component'))
+         ->values(array(
+           'content_type'      => $form_state['input']['content_type'],
+           'content_element'   => $form_state['input']['dropdown_second'],
+           'webform'           => $form_state['input']['webforms'],
+           'webform_component' => $form_state['input']['dropdown_second_element'],
+
+         ))
+        ->execute();
+}
+
+
+function title_pop_form_alter(&$form, $form_state, $form_id){
+ if ( preg_match('/webform_client_form_/', $form_id) ) {
+
+  $referer = parse_url($_SERVER['HTTP_REFERER']);
+
+  $path = preg_replace('#^/#', '', $referer['path']);
+  $node = drupal_get_normal_path($path);
+  $nid  = preg_replace('#node/#', '', $node);
+
+  $node = node_load($nid);
+
+  $tp_results = db_query('SELECT content_type, content_element, webform, webform_component FROM title_pop WHERE content_type = :ct', array(':ct' => ucwords(strtolower($node->type))))->fetchObject();
+
+  $title     = $node->title;
+  $component = $tp_results->webform_component;
+
+ foreach( $form_state['webform']['component_tree']['children'] as $key=>$value ) {
+     if ( $value[cid] == $component) {
+        $element = $value['form_key'];
+        $form_state['webform']['component_tree']['children'][$key]['value'] = $node->title;
+        $form['submitted'][$element]['#default_value'] = $node->title;
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
