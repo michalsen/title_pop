@@ -23,7 +23,7 @@ function title_pop_menu() {
               'access arguments' => array('accesstitle_pop content'),
               'description' => 'Title POP Control Page',
               'access callback' => TRUE,
-              'type' => MENU_LOCAL_TASK,
+              'type' => MENU_NORMAL_ITEM,
           );
    return $items;
 }
