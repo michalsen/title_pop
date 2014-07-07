@@ -1,7 +1,7 @@
 <?php
 /** 
- *  Title Pop
- *  Carry the node title via a CTA to a webform autocompletion.
+ * @file
+ * Title Pop
  */
 
 function title_pop_init() {
