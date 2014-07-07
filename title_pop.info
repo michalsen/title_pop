@@ -1,7 +1,12 @@
-; $Id$
+; $Id: $
 name = Title Pop
-description = Webform field auto-population
-package = Michalsen
-core = 7.x
+description = Webform field auto-
+
+package = Tracking
+
 dependencies[] = webform
 dependencies[] = link
+
+version = "7.x-1.10"
+core = "7.x"
+datestamp = "1403136000"

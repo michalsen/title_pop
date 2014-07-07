@@ -2,10 +2,9 @@
 /** 
  *  Title Pop
  *  Carry the node title via a CTA to a webform autocompletion.
- *
  */
 
-function title_pop_init () {
+function title_pop_init() {
   // Move this to form submit/validation
   if ( arg(2) == 'delete' ) {
     db_delete('title_pop')
@@ -20,7 +19,7 @@ function title_pop_menu() {
   $items['admin/title_pop'] = array(
               'title' => 'Title POP',
               'page callback' => 'title_pop_page',
-              'access arguments' => array('accesstitle_pop content'),
+              'access arguments' => array('access title_pop content'),
               'description' => 'Title POP Control Page',
               'access callback' => TRUE,
               'type' => MENU_NORMAL_ITEM,
@@ -82,6 +81,7 @@ function title_pop_form($form, &$form_state) {
 
   $options_first = title_pop_first_dropdown_options();
   $options_second = title_pop_second_dropdown_options();
+  $options_first_element = array();
 
    $ct_options[] = '-- Content Types --';
      foreach ( $ct_results as $row ) {
@@ -93,9 +93,9 @@ function title_pop_form($form, &$form_state) {
         $wf_options[$row->nid] = $row->title;
       }
 
-    $value_dropdown_first         = isset($form_state['values']['content_type']) ? $form_state['values']['content_type'] : key($options_first);
-    $value_dropdown_first_element = isset($form_state['values']['webforms']) ? $form_state['values']['webforms'] : key($options_first_element);
-    $value_content_element        = $form_state['values']['dropdown_second'];
+    $value_dropdown_first         = isset($form_state['values']['content_type']) ? $form_state['values']['content_type'] : key(array($options_first));
+    $value_dropdown_first_element = isset($form_state['values']['webforms']) ? $form_state['values']['webforms'] : key(array($options_first_element));
+    $value_content_element        = isset($form_state['values']['dropdown_second']);
 
   $form['markup'] = array(
     '#markup' => $markup,
@@ -180,17 +180,21 @@ function title_pop_ajax_callback_element($form, $form_state) {
 }
 
 function title_pop_first_dropdown_options() {
+     if ( isset($ct_results) ) {
       return $ct_results;
+    }
 }
 
 function title_pop_second_dropdown_options() {
+     if ( isset($wf_results) ) {
       return $wf_results;
+    }
 }
 
 
 function title_pop_second_dropdown_options_components($value_dropdown_first) {
 $bundle = strtolower(preg_replace('/ /', '_', $value_dropdown_first));
- $ce_results = db_query('SELECT field_id, field_name FROM field_config_instance WHERE bundle = :bundle', array(':bundle' => $bundle));
+ $ce_results = db_query('SELECT field_id, field_name FROM {field_config_instance} WHERE bundle = :bundle', array(':bundle' => $bundle));
   
    $options['choose'] = '-- Choose Element --';
    $options['Title'] = 'Title';
@@ -211,13 +215,12 @@ function title_pop_second_dropdown_options_element($value_dropdown_first_element
        }
      
     return $options;
-
 }
 
-function title_pop_form_submit($form, $form_state){
+function title_pop_form_submit($form, $form_state) {
 
    db_insert('title_pop')
-         ->fields(array('content_type','content_element','webform','webform_component'))
+         ->fields(array('content_type', 'content_element', 'webform', 'webform_component'))
          ->values(array(
            'content_type'      => $form_state['input']['content_type'],
            'content_element'   => $form_state['input']['dropdown_second'],
@@ -229,7 +232,7 @@ function title_pop_form_submit($form, $form_state){
 }
 
 
-function title_pop_form_alter(&$form, $form_state, $form_id){
+function title_pop_form_alter(&$form, $form_state, $form_id) {
  if ( preg_match('/webform_client_form_/', $form_id) ) {
 
   $referer = parse_url($_SERVER['HTTP_REFERER']);
@@ -240,13 +243,13 @@ function title_pop_form_alter(&$form, $form_state, $form_id){
 
   $node = node_load($nid);
 
-  $tp_results = db_query('SELECT content_type, content_element, webform, webform_component FROM title_pop WHERE content_type = :ct', array(':ct' => ucwords(strtolower($node->type))))->fetchObject();
+  $tp_results = db_query('SELECT content_type, content_element, webform, webform_component FROM {title_pop} WHERE content_type = :ct', array(':ct' => ucwords(strtolower($node->type))))->fetchObject();
 
   $title     = $node->title;
   $component = $tp_results->webform_component;
 
- foreach( $form_state['webform']['component_tree']['children'] as $key=>$value ) {
-     if ( $value[cid] == $component) {
+ foreach ( $form_state['webform']['component_tree']['children'] as $key => $value ) {
+     if ( $value['cid'] == $component ) {
         $element = $value['form_key'];
         $form_state['webform']['component_tree']['children'][$key]['value'] = $node->title;
         $form['submitted'][$element]['#default_value'] = $node->title;
@@ -254,13 +257,3 @@ function title_pop_form_alter(&$form, $form_state, $form_id){
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
