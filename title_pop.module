@@ -238,6 +238,8 @@ function title_pop_form_alter(&$form, $form_state, $form_id) {
   $referer = parse_url($_SERVER['HTTP_REFERER']);
 
   $path = preg_replace('#^/#', '', $referer['path']);
+  // Added for Trailing Slash module
+  $path = preg_replace('#/$#', '', $path);
   $node = drupal_get_normal_path($path);
   $nid  = preg_replace('#node/#', '', $node);
 
