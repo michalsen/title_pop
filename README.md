@@ -8,6 +8,9 @@ v.01 10/21/2013
 v.02 07/07/2014
  - Cleaning Code
 
+v.03 07/09/2014
+ - Update w/coder
+
 I made a dependancy for the link module. This is a small module provides a standard custom content field for a link.
 This way, within a peice of content, such as event or career/job opening, the user can put the webform to the content type.
 If all the careers use the same webform, then just link to the webform and title_pop will automatically tie in the node information, such as Title to the webform, such as Position Interested In.
