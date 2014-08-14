@@ -7,6 +7,11 @@ package = Tracking
 dependencies[] = webform
 dependencies[] = link
 
+stylesheets[all][] = title_pop.css
+
+scripts[] = title_pop.js
+
+
 version = "7.x-1.10"
 core = "7.x"
 datestamp = "1403136000"

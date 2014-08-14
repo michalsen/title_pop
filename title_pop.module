@@ -6,13 +6,14 @@
 
 function title_pop_init() {
   // Move this to form submit/validation
-  if ( arg(2) == 'delete' ) {
-    db_delete('title_pop')
-          ->condition('title_pop', arg(3) )
+
+  if ( arg(1) == 'title_pop' &&
+       isset($_REQUEST['delete']) ) {
+       db_delete('title_pop')
+          ->condition('title_pop', $_REQUEST['delete'] )
           ->execute();
       }
    }
-
 
 function title_pop_menu() {
   $items = array();
@@ -24,12 +25,21 @@ function title_pop_menu() {
               'access callback' => TRUE,
               'type' => MENU_NORMAL_ITEM,
           );
+  $items['admin/title_pop/delete/%'] = array(
+              //'title' => 'Title POP',
+              'page callback' => 'title_pop_page_delete',
+              //'access arguments' => array('access title_pop content'),
+              //'access callback' => TRUE,
+              'page arguments' => array(3),
+              'type' => MENU_CALLBACK,
+          );
    return $items;
 }
 
 function title_pop_page() {
   // Are you an admin? Hope so.
   // Obviously this should be based on permissions, not hard-coded role.
+  // This may get fixed someday.
     global $user;
   if ($user->uid == 1) {
     return drupal_get_form('title_pop_form');
@@ -38,6 +48,17 @@ function title_pop_page() {
   // ...or else returnes a blank page
     return drupal_get_form();
   }
+}
+
+function title_pop_page_delete() {
+
+       db_delete('title_pop')
+          ->condition('title_pop', arg(3) )
+          ->execute();
+    //drupal_set_message(t('Deleted.'));
+    drupal_goto('admin/title_pop');
+
+
 }
 
 function title_pop_form($form, &$form_state) {
@@ -59,7 +80,8 @@ $rows = array();
     $wf_result = db_query('SELECT title FROM {node} WHERE nid = :nid', array(':nid' => $row->webform))->fetchObject();
     $wc_result = db_query('SELECT name FROM {webform_component} WHERE cid = :cid', array(':cid' => $row->webform_component))->fetchObject();
 
-    $rows[] = array('<a href="/admin/title_pop/delete/' . $row->title_pop . '">X</a>',
+    //$rows[] = array('<a href="/admin/title_pop/delete/' . $row->title_pop . '">X</a>',
+    $rows[] = array('<a href="/admin/title_pop/delete/' . $row->title_pop . '" name=' . $row->title_pop . '>X</a>',
                     $ct_result->name . ' [' . $row->content_type . ']',
                     $ce_result->field_name . ' [' . $row->content_element . ']',
                     $wf_result->title . ' [' . $row->webform . ']',
