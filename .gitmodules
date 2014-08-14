@@ -1,0 +1,3 @@
+[submodule "profiles/sndev_install/modules/sncustom/title_pop"]
+	path = profiles/sndev_install/modules/sncustom/title_pop
+	url = https://github.com/michalsen/title_pop
