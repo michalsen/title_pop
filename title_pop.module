@@ -1,9 +1,7 @@
 <?php
 /** 
- * @file
  *  Title Pop
  *  Carry the node title via a CTA to a webform autocompletion.
- *
  */
 
 function title_pop_init() {
@@ -21,10 +19,10 @@ function title_pop_menu() {
   $items['admin/title_pop'] = array(
               'title' => 'Title POP',
               'page callback' => 'title_pop_page',
-              'access arguments' => array('accesstitle_pop content'),
+              'access arguments' => array('access title_pop content'),
               'description' => 'Title POP Control Page',
               'access callback' => TRUE,
-              'type' => MENU_LOCAL_TASK,
+              'type' => MENU_NORMAL_ITEM,
           );
    return $items;
 }
@@ -44,16 +42,15 @@ function title_pop_page() {
 
 function title_pop_form($form, &$form_state) {
 
- $tp_results = db_query('SELECT * FROM {title_pop}');
+$tp_results = db_query('SELECT * FROM {title_pop}');
 
- $markup  = '<table>';
- $markup .= '<tr>';
- $markup .= '<th>Delete</th>';
- $markup .= '<th>Content Type [machine name]</th>';
- $markup .= '<th>Content Element [field id]</th>';
- $markup .= '<th>Webform [nid]</th>';
- $markup .= '<th>Webform Component [cid]</th>';
- $markup .= '</tr>';
+$header = array('Delete', 
+                'Content Type [machine name]', 
+                'Content Element [field id]',
+                'Webform [nid]',
+                'Webform Component [cid]');
+
+$rows = array();
 
   foreach ( $tp_results as $row ) {
 
@@ -62,27 +59,21 @@ function title_pop_form($form, &$form_state) {
     $wf_result = db_query('SELECT title FROM {node} WHERE nid = :nid', array(':nid' => $row->webform))->fetchObject();
     $wc_result = db_query('SELECT name FROM {webform_component} WHERE cid = :cid', array(':cid' => $row->webform_component))->fetchObject();
 
-      $markup .= '<tr><td>';
-      $markup .= '<a href="/admin/title_pop/delete/' . $row->title_pop . '">X</a>';
-      $markup .= '</td><td>';
-      $markup .= $ct_result->name . ' [' . $row->content_type . ']';
-      $markup .= '</td><td>';
-      $markup .= $ce_result->field_name . ' [' . $row->content_element . ']';
-      $markup .= '</td><td>';
-      $markup .= $wf_result->title . ' [' . $row->webform . ']';
-      $markup .= '</td><td>';
-      $markup .= $wc_result->name . ' [' . $row->webform_component . ']';
-      $markup .= '</td></tr>';
+    $rows[] = array('<a href="/admin/title_pop/delete/' . $row->title_pop . '">X</a>',
+                    $ct_result->name . ' [' . $row->content_type . ']',
+                    $ce_result->field_name . ' [' . $row->content_element . ']',
+                    $wf_result->title . ' [' . $row->webform . ']',
+                    $wc_result->name . ' [' . $row->webform_component . ']');
+
 
   }
-
- $markup .= '<table>';
 
  $ct_results = db_query('SELECT type, name FROM {node_type}');
  $wf_results = db_query('SELECT nid, title FROM {node} WHERE type = :type', array(':type' => 'webform'));
 
   $options_first = title_pop_first_dropdown_options();
   $options_second = title_pop_second_dropdown_options();
+  $options_first_element = array();
 
    $ct_options[] = '-- Content Types --';
      foreach ( $ct_results as $row ) {
@@ -94,12 +85,16 @@ function title_pop_form($form, &$form_state) {
         $wf_options[$row->nid] = $row->title;
       }
 
-    $value_dropdown_first         = isset($form_state['values']['content_type']) ? $form_state['values']['content_type'] : key($options_first);
-    $value_dropdown_first_element = isset($form_state['values']['webforms']) ? $form_state['values']['webforms'] : key($options_first_element);
-    $value_content_element        = $form_state['values']['dropdown_second'];
+    $value_dropdown_first         = isset($form_state['values']['content_type']) ? $form_state['values']['content_type'] : key(array($options_first));
+    $value_dropdown_first_element = isset($form_state['values']['webforms']) ? $form_state['values']['webforms'] : key(array($options_first_element));
+    $value_content_element        = isset($form_state['values']['dropdown_second']);
 
+
+/** 
+ *   FORM ARRAY
+ */
   $form['markup'] = array(
-    '#markup' => $markup,
+    '#markup' => theme('table', array('header' => $header, 'rows' => $rows)),
     '#title' => t(''),
     );
 
@@ -181,11 +176,15 @@ function title_pop_ajax_callback_element($form, $form_state) {
 }
 
 function title_pop_first_dropdown_options() {
+     if ( isset($ct_results) ) {
       return $ct_results;
+    }
 }
 
 function title_pop_second_dropdown_options() {
+     if ( isset($wf_results) ) {
       return $wf_results;
+    }
 }
 
 
@@ -212,7 +211,6 @@ function title_pop_second_dropdown_options_element($value_dropdown_first_element
        }
      
     return $options;
-
 }
 
 function title_pop_form_submit($form, $form_state) {
@@ -236,14 +234,10 @@ function title_pop_form_alter(&$form, $form_state, $form_id) {
   $referer = parse_url($_SERVER['HTTP_REFERER']);
 
   $path = preg_replace('#^/#', '', $referer['path']);
+  // Added for Trailing Slash module
   $path = preg_replace('#/$#', '', $path);
   $node = drupal_get_normal_path($path);
   $nid  = preg_replace('#node/#', '', $node);
-
-
-  $node_path = explode('/', drupal_get_normal_path($path));
-  $nid = $node_path[1];
-
 
   $node = node_load($nid);
 
@@ -261,13 +255,3 @@ function title_pop_form_alter(&$form, $form_state, $form_id) {
     }
   }
 }
-
-
-
-
-
-
-
-
-
-

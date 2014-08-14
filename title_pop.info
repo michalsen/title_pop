@@ -1,6 +1,6 @@
 ; $Id: $
 name = Title Pop
-description = Webform field auto-
+description = Webform field auto-populate
 
 package = Tracking
 
@@ -10,3 +10,9 @@ dependencies[] = link
 version = "7.x-1.10"
 core = "7.x"
 datestamp = "1403136000"
+
+; Information added by drush on 2014-08-07
+version = "unknown"
+project = "title_pop"
+datestamp = "1407439874"
+
